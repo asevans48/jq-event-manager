@@ -44,6 +44,11 @@ function add_step(chain, step_name, fn, failed_callback=null, progress_callback,
 }
 
 
+function call_junction(event, result){
+    $(document).trigger(event, result);
+}
+
+
 function create_chain(chain_name){
     return {
         name: chain_name,
