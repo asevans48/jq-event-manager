@@ -55,19 +55,21 @@ function execute_step_timeout(timeout, result){
 function get_chain(step, previous_chain){
     var to = step.timeout;
     var func = step.func;
+    var on_fail = step.on_failed;
+    var on_progress = step.on_progress;
     var new_chain =  $.Deferred();
     if(to > 0){
         new_chain.then(function(result){
             return execute_step_timeout(to, result);
-        })
+        });
     }
     new_chain.then(function(result){
            return func(result);
-    });
+    }, on_fail, on_progress);
     if(previous_chain){
         new_chain.then(function(result){
             previous_chain.resolve(result);
-        });
+        }, on_fail, on_progress);
     }
     return new_chain;
 }
