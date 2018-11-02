@@ -1,18 +1,30 @@
 /*
- Event manager for building event driven sites
+ Event manager for building event driven sites.
+
+ Chains are used to complete sets of actions, deferred or not.
+ This allows for asyncronous execution of code (concurrency).
+
+ To use a chain, every function must return the args object
+ passed to it with the 'chain' name or an args object containing
+ a chain key hose value is the chain name passed in to the original
+ function.
+
+ This allows for the completion event to pass the chain name to
+ any function bound to the 'chain_completion_event.'
+
+ While not a technical requirement it is HIGHLY recommended.
+
 
  @author aevans
 */
 
+var event_chains = {};
 var chains = {};
+var chain_complete_event = new Event('chain_complete_event');
 
 
-function finish_step(args=null){
-    if(args){
-        $(document).trigger('step_finished', args);
-    }else{
-        $(document).trigger('step_finished');
-    }
+function create_junction(event, junction_handler, chain){
+    $(document).bind(event, junction_handler);
 }
 
 
@@ -75,6 +87,11 @@ function get_chain(step, previous_chain){
 }
 
 
+function trigger_chain_completion(result){
+    $(document).trigger(chain_complete_event, [result]);
+}
+
+
 function build_chain(chain_name){
     /* build a chain with a for loop to avoid clutter */
     var chain = chains[chain_name];
@@ -94,10 +111,18 @@ function build_chain(chain_name){
         chain.steps = rebuilt_order;
         return deferred;
     }
-    return $.Deffered;
+    return $.Deffered();
 }
 
 
 function execute(chain_name){
-    build_chain(chain_name).resolve();
+    args = {
+        chain: chain_name
+    }
+    build_chain(chain_name).resolve(args);
+}
+
+
+function bind_complete_function(fn){
+    $(document).bind(chain_complete_event, fn);
 }
