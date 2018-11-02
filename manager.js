@@ -28,12 +28,6 @@ function create_junction(event, junction_handler, chain){
 }
 
 
-function add_callback(chain, step_name, callback, callback_args){
-    var steps = chain.steps;
-
-}
-
-
 function add_step(chain, step_name, fn, failed_callback=null, progress_callback, defer_timeout=0){
     chain.steps[step_name] = {
         func: fn,
