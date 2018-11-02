@@ -28,6 +28,11 @@ function create_junction(event, junction_handler, chain){
 }
 
 
+function complete_chain(result){
+    $(document).trigger(chain_complete_event, result)
+}
+
+
 function add_step(chain, step_name, fn, failed_callback=null, progress_callback, defer_timeout=0){
     chain.steps[step_name] = {
         func: fn,
