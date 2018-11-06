@@ -18,7 +18,6 @@
  @author aevans
 */
 
-var event_chains = {};
 var chains = {};
 var chain_complete_event = new Event('chain_complete_event');
 
@@ -50,11 +49,13 @@ function call_junction(event, result){
 
 
 function create_chain(chain_name){
-    return {
+    chain = {
         name: chain_name,
         steps: {},
         execution_order: []
     }
+    chains[chain_name] = chain;
+    return chain;
 }
 
 
@@ -68,26 +69,20 @@ function execute_step_timeout(timeout, result){
 }
 
 
-function get_chain(step, previous_chain){
+function get_chain(step, execution_chain){
     var to = step.timeout;
     var func = step.func;
     var on_fail = step.on_failed;
     var on_progress = step.on_progress;
-    var new_chain =  $.Deferred();
     if(to > 0){
-        new_chain.then(function(result){
+        execution_chain = execution_chain.then(function(result){
             return execute_step_timeout(to, result);
         });
     }
-    new_chain.then(function(result){
+    execution_chain = execution_chain.then(function(result){
            return func(result);
     }, on_fail, on_progress);
-    if(previous_chain){
-        new_chain.then(function(result){
-            previous_chain.resolve(result);
-        }, on_fail, on_progress);
-    }
-    return new_chain;
+    return execution_chain;
 }
 
 
@@ -99,31 +94,32 @@ function trigger_chain_completion(result){
 function build_chain(chain_name){
     /* build a chain with a for loop to avoid clutter */
     var chain = chains[chain_name];
-    if(chain && chain.steps.length > 0){
-        var deffered = $.Deffered();
-        var tmp_dfrd = deferred;
-        var steps = chain.steps;
-        var order = chain.execution_order;
-        var rebuilt_order = [];
-        var previous_chain = null;
-        while(steps && steps.length > 0){
-            var step_name = order.pop();
-            var step = steps[step_name];
-            rebuilt_order.unshift(step_name);
-            previous_chain = get_chain(step, previous_chain);
+    console.log(chain);
+    step_keys = Object.keys(chain.steps);
+    if(chain && step_keys.length > 0){
+        var deferred = $.Deferred();
+        var order = chain.execution_order.slice(0);
+        var execution_chain = $.Deferred();
+        var tec = execution_chain.promise();
+        while(order && order.length > 0){
+            var step_name = order.shift();
+            var step = chain.steps[step_name];
+            tec = get_chain(step, tec);
         }
-        chain.steps = rebuilt_order;
-        return deferred;
+        return execution_chain;
     }
-    return $.Deffered();
+    return $.Deferred();
 }
 
 
 function execute(chain_name){
     args = {
         chain: chain_name
-    }
-    build_chain(chain_name).resolve(args);
+    };
+    console.log(args);
+    var dfrd = build_chain(chain_name);
+    console.log('Attempting Resolve');
+    dfrd.resolve(args);
 }
 
 
